@@ -5,6 +5,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
+from rcl_interfaces.msg import ParameterDescriptor, ParameterType
 
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 from gazebo_msgs.msg import EntityState
@@ -18,12 +19,14 @@ class Move_Gazebo_Object(Node):
    
   def __init__(self) -> None:
     super().__init__('move_gazebo_object')
-    self.gz_object_name = self.declare_parameter("gz_object_name", "roi_sphere").value
-    self.pose_topic = self.declare_parameter("pose_topic", "/scenario/target").value
-
+    self.gz_object_name  = self.declare_parameter("gz_object_name", "roi_sphere", 
+                                                  ParameterDescriptor(type=ParameterType.PARAMETER_STRING)).get_parameter_value().string_value
+    self.pose_topic  = self.declare_parameter("pose_topic", "/object_pose", 
+                                                  ParameterDescriptor(type=ParameterType.PARAMETER_STRING)).get_parameter_value().string_value
+    
     # sub
     sub_callback_group = MutuallyExclusiveCallbackGroup()
-    self.sub_target = self.create_subscription(PoseStamped, self.pose_topic, self.__callback_target, 10, callback_group=sub_callback_group)
+    self.sub_object = self.create_subscription(PoseStamped, self.pose_topic, self.__callback_object, 10, callback_group=sub_callback_group)
 
     # Cli
     cli_callback_group = MutuallyExclusiveCallbackGroup()
@@ -33,27 +36,27 @@ class Move_Gazebo_Object(Node):
     timer_callback_group = MutuallyExclusiveCallbackGroup()
     self.__timer_period = 0.01  # seconds
     self.__timer_main = self.create_timer(self.__timer_period, self.__main, callback_group=timer_callback_group)
-    self.get_logger().info('Start move target')
+    self.get_logger().info('Start move object')
 
     # Init msg
-    self.target_msg = PoseStamped()
+    self.object_msg = PoseStamped()
 
-    self.target_state_gazebo_msg = EntityState()
-    self.target_state_gazebo_msg.name = self.gz_object_name
-    self.target_state_gazebo_msg.pose = self.target_msg.pose
+    self.object_state_gazebo_msg = EntityState()
+    self.object_state_gazebo_msg.name = self.gz_object_name
+    self.object_state_gazebo_msg.pose = self.object_msg.pose
 
 
 #
 
 
-  def __callback_target(self, msg):
-    self.target_msg = msg
+  def __callback_object(self, msg):
+    self.object_msg = msg
 
 
   def __main(self):
-    self.target_state_gazebo_msg.pose = self.target_msg.pose
+    self.object_state_gazebo_msg.pose = self.object_msg.pose
     req = SetEntityState.Request()
-    req.state = self.target_state_gazebo_msg
+    req.state = self.object_state_gazebo_msg
 
     future = self.cli_entity_state.call_async(req)
     future.add_done_callback(self.gazebo_client_callback_response)
@@ -66,8 +69,8 @@ class Move_Gazebo_Object(Node):
               pass
               # self.get_logger().info("Entity moved successfully!")
           else:
-              self.get_logger().warn("Failed to move the gazebo target entity!")
-              self.get_logger().warn("Deduce that there is no gazebo target to move.")
+              self.get_logger().warn("Failed to move the gazebo object entity!")
+              self.get_logger().warn("Deduce that there is no gazebo object to move.")
               self.destroy_node()
       except Exception as e:
           self.get_logger().error(f"Service call failed: {e}")
