@@ -15,6 +15,17 @@ from move_gz_object.srv import ModifyObjectPose
 
 #
 
+def mult_orientation(a,b):
+    # x,y,z,w
+    return np.array([        
+        a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],  # 1
+        a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],  # i
+        a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],  # j
+        a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3]   # k
+        ])
+
+    
+
 
 class Randomized_Object_Pose(Node):
    
@@ -109,15 +120,14 @@ class Randomized_Object_Pose(Node):
             pose_range.orientation.z,
             pose_range.orientation.w
         ])
-        rand_rotation = np.random.uniform(-rotation_range, rotation_range)
+        rand_rotation = np.random.uniform(np.array([0.,0.,0.,1.]), rotation_range)
 
         new_position = current_pos + rand_translation
-        new_orientation = current_orient + rand_rotation
+        # new_orientation = current_orient + rand_rotation
+        new_orientation = mult_orientation(current_orient, rand_rotation)
 
         # Normalize quaternion
-        norm = np.linalg.norm(new_orientation)
-        if norm > 0:
-            new_orientation = new_orientation / norm
+        new_orientation = new_orientation / np.linalg.norm(new_orientation)
 
         new_pose = Pose()
         new_pose.position.x = float(new_position[0])

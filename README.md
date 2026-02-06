@@ -22,7 +22,7 @@ nodes_to_start.append(Node(
 # Call the service
 my_service_name = "/modify_object_pose"
 my_service_type = "move_gz_object/srv/ModifyObjectPose"
-my_service_arguments = '{object_name: "aruco_marker", range: {position: {x: 0.5, y: 0.5, z: 0.5}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}'
+my_service_arguments = '{object_name: "aruco_marker", range: {position: {x: 0.5, y: 0.5, z: 0.5}, orientation: {x: 0.0, y: 0.24, z: 0.24, w: 0.93}}}'
 
 command = f"ros2 service call {my_service_name} {my_service_type} '{my_service_arguments.strip()}'"
 
