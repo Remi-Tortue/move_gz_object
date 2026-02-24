@@ -10,7 +10,7 @@ from rcl_interfaces.msg import ParameterDescriptor, ParameterType
 from gazebo_msgs.msg import EntityState
 from gazebo_msgs.srv import SetEntityState, GetEntityState
 
-from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
+from geometry_msgs.msg import Pose, PoseStamped, TransformStamped, Point, Quaternion
 from move_gz_object.srv import ModifyObjectPose
 
 #
@@ -31,6 +31,13 @@ class Randomized_Object_Pose(Node):
    
     def __init__(self) -> None:
         super().__init__('randomized_object_pose_srv')
+
+        seed_value  = self.declare_parameter("seed_value", 0, 
+                                                    ParameterDescriptor(type=ParameterType.PARAMETER_STRING)).get_parameter_value().integer_value
+        np.random.seed(seed_value)
+
+        # pub
+        self.__pub_offset_pose = self.create_publisher(PoseStamped, 'offset_pose', 10)
 
         # Services
         srv_callback_group = MutuallyExclusiveCallbackGroup()
@@ -121,6 +128,9 @@ class Randomized_Object_Pose(Node):
             pose_range.orientation.w
         ])
         rand_rotation = np.random.uniform(np.array([0.,0.,0.,1.]), rotation_range)
+
+        self.__pub_offset_pose.publish(PoseStamped(pose=Pose(position=Point(x=rand_translation[0], y=rand_translation[1], z=rand_translation[2]),
+                                                             orientation=Quaternion(x=rand_rotation[0], y=rand_rotation[1], z=rand_rotation[2], w=rand_rotation[3]))))
 
         new_position = current_pos + rand_translation
         # new_orientation = current_orient + rand_rotation
